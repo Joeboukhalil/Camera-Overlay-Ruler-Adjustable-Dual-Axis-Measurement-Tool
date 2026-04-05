@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Camera Ruler Tool</title>
+
+<style>
+body {
+  margin: 0;
+  overflow: hidden;
+  font-family: Arial;
+}
+
+video, canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+#ui {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  background: rgba(255,255,255,0.9);
+  padding: 10px;
+  border-radius: 10px;
+}
+
+input {
+  width: 200px;
+}
+</style>
+</head>
+
+<body>
+
+<video id="video" autoplay playsinline></video>
+<canvas id="canvas"></canvas>
+
+<div id="ui">
+  <div>Adjust ruler to match 10 cm</div>
+  <input type="range" id="scaleSlider" min="200" max="1000" value="500"><br><br>
+  <button onclick="downloadImage()">Download Image</button>
+</div>
+
+<script>
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const slider = document.getElementById("scaleSlider");
+
+// Start camera
+navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+.then(stream => video.srcObject = stream);
+
+// Resize canvas
+video.onloadedmetadata = () => {
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  draw();
+};
+
+// Draw loop
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Draw camera
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  let width = slider.value;
+  let height = slider.value;
+
+  let startX = 50;
+  let startY = canvas.height - 150;
+
+  drawHorizontalRuler(startX, startY, width);
+  drawVerticalRuler(startX, startY, height);
+
+  requestAnimationFrame(draw);
+}
+
+// Horizontal ruler
+function drawHorizontalRuler(x, y, width) {
+  const totalCm = 10;
+
+  for (let i = 0; i <= totalCm * 10; i++) {
+    let posX = x + (i / (totalCm * 10)) * width;
+
+    ctx.beginPath();
+    ctx.moveTo(posX, y);
+    
+    if (i % 10 === 0) {
+      ctx.lineTo(posX, y - 30);
+      ctx.fillText(i / 10, posX - 5, y - 35);
+    } else if (i % 5 === 0) {
+      ctx.lineTo(posX, y - 20);
+    } else {
+      ctx.lineTo(posX, y - 10);
+    }
+
+    ctx.stroke();
+  }
+}
+
+// Vertical ruler
+function drawVerticalRuler(x, y, height) {
+  const totalCm = 10;
+
+  for (let i = 0; i <= totalCm * 10; i++) {
+    let posY = y - (i / (totalCm * 10)) * height;
+
+    ctx.beginPath();
+    ctx.moveTo(x, posY);
+
+    if (i % 10 === 0) {
+      ctx.lineTo(x + 30, posY);
+      ctx.fillText(i / 10, x + 35, posY + 3);
+    } else if (i % 5 === 0) {
+      ctx.lineTo(x + 20, posY);
+    } else {
+      ctx.lineTo(x + 10, posY);
+    }
+
+    ctx.stroke();
+  }
+}
+
+// Download image
+function downloadImage() {
+  const link = document.createElement('a');
+  link.download = 'measurement.png';
+  link.href = canvas.toDataURL();
+  link.click();
+}
+</script>
+
+</body>
+</html>
